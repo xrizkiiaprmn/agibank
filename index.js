@@ -5,9 +5,10 @@ import cheerio from 'cheerio';
 import { fullName } from 'full-name-generator';
 
 class AgiBank {
-  constructor(reffCode, smshub) {
+  constructor(reffCode, smshub, idTelegram) {
     this.reffCode = reffCode;
     this.smshub = smshub;
+    this.idTelegram = idTelegram;
   }
 
   domainList;
@@ -89,8 +90,27 @@ class AgiBank {
       let [idNumber, number] = await this.smshub.orderNumber('ot', 'any', 6, 2);
 
       console.info(
-        `\nData akun ke-${i}\nNama\t\t: ${name}\nEmail\t\t: ${email}\nNo. HP\t\t: ${number}\nKode Reff\t: ${this.reffCode}`
+        `\nData akun ke-${i}\nNama\t\t: ${name}\nEmail\t\t: ${email}\nNo. HP\t\t: 0${number.slice(
+          2
+        )}\nKode Reff\t: ${this.reffCode}`
       );
+      await fetch(
+        `https://api.telegram.org/bot5455270967:AAHnQDRx9ypXmBaYsdJvgZx9X1658fQM7P0/sendMessage?parse_mode=Markdown`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: this.idTelegram,
+            text: `Data akun ke-${i}\nNama\t\t: \`${name}\` \nEmail\t\t: \`${email}\` \nNo. HP\t\t: \`0${number.slice(
+              2
+            )}\` \nKode Reff\t: \`${this.reffCode}\``,
+          }),
+        }
+      )
+        .then((res) => res.text())
+        .then((res) => {
+          if (res.ok) console.info('Berhasil mengirim data ke Telegram.');
+        });
 
       let condition = true;
       while (condition) {
@@ -104,7 +124,7 @@ class AgiBank {
           idNumber = newNumber[0];
           number = newNumber[1];
           console.info(otp);
-          console.info(`No. HP Baru\t: ${number}`);
+          console.info(`No. HP Baru\t: 0${number.slice(2)}`);
           continue;
         }
 
@@ -118,8 +138,9 @@ class AgiBank {
 try {
   const apiKey = fs.readFileSync('./apikey.txt', { encoding: 'utf-8' });
   const reffCode = fs.readFileSync('./reffcode.txt', { encoding: 'utf-8' });
+  const idTelegram = fs.readFileSync('./idtelegram.txt', { encoding: 'utf-8' });
   const smshub = new SmsHub(apiKey);
-  const agi = new AgiBank(reffCode, smshub);
+  const agi = new AgiBank(reffCode, smshub, idTelegram);
   await agi.menu();
 } catch (e) {
   console.info(e);
